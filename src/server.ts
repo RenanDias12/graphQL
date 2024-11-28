@@ -1,14 +1,16 @@
-import Fastify from "fastify";
+import { ApolloServer } from "@apollo/server";
+import { startStandaloneServer } from "@apollo/server/standalone";
 
-const app = Fastify({
-    logger: true
+//Schema definitions and resolvers
+import { typeDefs, resolvers } from "./schema/schema.js";
+
+const server = new ApolloServer({
+    typeDefs,
+    resolvers
 });
 
-try {
-    app.listen({ port: 3333 }).then(() => {
-        console.log('Server up on http://localhost:3333')
-    });
-} catch (error) {
-    console.error(error);
-    process.exit(1);
-}
+const { url } = await startStandaloneServer(server, {
+    listen: { port: 4000 },
+});
+
+console.log(`Server ready at: ${url}`)
