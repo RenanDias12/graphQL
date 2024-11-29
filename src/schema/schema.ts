@@ -1,28 +1,8 @@
 import { authors, games, reviews } from "../database/_db.js";
-
-type QueryArgs = {
-    id: String
-}
-
-type Game = {
-    id: String,
-    title: String,
-    platform: Array<String>
-}
-
-type Author = {
-    id: String,
-    name: String,
-    verified: Boolean
-}
-
-type Review = {
-    id: String,
-    rating: Number,
-    content: String,
-    author_id: String,
-    game_id: String
-}
+import { Game, AddGameQuery, EditGameQuery } from "../types/game.types.js";
+import { Author } from "../types/author.types.js";
+import { Review } from "../types/review.types.js";
+import { QueryArgs } from "../types/query.types.js";
 
 const typeDefs = `#graphql
     type Game {
@@ -59,6 +39,22 @@ const typeDefs = `#graphql
         authors: [Author]
         author(id:ID!): Author
     }
+
+    type Mutation {
+        addGame(game: AddGameInput!) : Game
+        updateGame(id: ID!, edits: EditGameInput!) : Game
+        deleteGame(id: ID!): [Game]
+    }
+
+    input AddGameInput {
+        title: String!,
+        platform:[String!]!
+    }
+
+    input EditGameInput {
+        title: String,
+        platform:[String!]
+    }
 `
 
 const resolvers = {
@@ -78,7 +74,7 @@ const resolvers = {
         },
     },
 
-    //Joins
+    //Relations
     Game: {
         reviews: (parent: Game) => {
             return reviews.filter((review) => review.game_id === parent.id);
@@ -97,6 +93,42 @@ const resolvers = {
             return games.find((game) => game.id === parent.game_id);
         }
     },
+
+    Mutation: {
+        addGame: (_: any, args: AddGameQuery) => {
+            //Here you'll save in your database
+            let game = {
+                ...args.game,
+                id: Math.floor(Math.random() * 1000).toString()
+            }
+
+            games.push(game);
+
+            return game;
+        },
+        updateGame: (_: any, args: EditGameQuery) => {
+            const index = games.findIndex((game) => game.id === args.id);
+            if (index === -1) {
+                return { error: 'Game Not Found' };
+            }
+
+            const newGame = { ...games[index], ...args.edits };
+            games[index] = newGame;
+
+            return newGame;
+
+        },
+        deleteGame: (_: any, args: QueryArgs) => {
+            //Here you'll delete in your database
+            const index = games.findIndex((game) => game.id === args.id);
+            if (index === -1) {
+                return { error: 'Game Not Found' };
+            }
+
+            const deleted = games.splice(index, 1);
+            return deleted;
+        }
+    }
 };
 
 export { typeDefs, resolvers }
